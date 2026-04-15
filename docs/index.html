@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trustworthy Agent Lab — Hyungrok Oh</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f8f7f4;
+    --bg3: #f1efe8;
+    --text: #1a1a18;
+    --text2: #4a4a47;
+    --text3: #888780;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.06);
+    --purple: #534AB7;
+    --purple-bg: #EEEDFE;
+    --teal: #0F6E56;
+    --teal-bg: #E1F5EE;
+    --coral: #993C1D;
+    --coral-bg: #FAECE7;
+    --blue: #185FA5;
+    --blue-bg: #E6F1FB;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+    --gray: #5F5E5A;
+    --gray-bg: #F1EFE8;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --bg2: #222220;
+      --bg3: #2a2a28;
+      --text: #e8e6df;
+      --text2: #b4b2a9;
+      --text3: #6a6a66;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.06);
+      --purple: #7F77DD;
+      --purple-bg: #26215C;
+      --teal: #1D9E75;
+      --teal-bg: #04342C;
+      --coral: #F0997B;
+      --coral-bg: #4A1B0C;
+      --blue: #85B7EB;
+      --blue-bg: #042C53;
+      --amber: #EF9F27;
+      --amber-bg: #412402;
+      --gray: #B4B2A9;
+      --gray-bg: #2C2C2A;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex; align-items: center; gap: 32px;
+    height: 52px;
+  }
+  .nav-brand { font-weight: 600; font-size: 14px; color: var(--text); text-decoration: none; }
+  .nav-links { display: flex; gap: 24px; margin-left: auto; }
+  .nav-links a { font-size: 13px; color: var(--text3); text-decoration: none; transition: color 0.15s; }
+  .nav-links a:hover { color: var(--text); }
+
+  /* Hero */
+  .hero {
+    padding: 72px 40px 56px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .hero-label { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; }
+  .hero-title { font-size: 36px; font-weight: 600; line-height: 1.25; color: var(--text); margin-bottom: 16px; }
+  .hero-title span { color: var(--purple); }
+  .hero-sub { font-size: 16px; color: var(--text2); max-width: 560px; line-height: 1.7; margin-bottom: 28px; }
+  .hero-meta { display: flex; gap: 20px; flex-wrap: wrap; }
+  .hero-badge { font-size: 12px; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); color: var(--text3); }
+
+  /* Section */
+  .section { padding: 56px 40px; border-top: 1px solid var(--border2); }
+  .section-inner { max-width: 800px; margin: 0 auto; }
+  .section-label { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 24px; }
+
+  /* Beliefs */
+  .beliefs { display: flex; flex-direction: column; gap: 12px; }
+  .belief {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 16px 20px;
+    background: var(--bg2);
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+  }
+  .belief-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 7px; }
+  .bd-purple { background: var(--purple); }
+  .bd-teal   { background: var(--teal); }
+  .bd-coral  { background: var(--coral); }
+  .belief-main { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .belief-sub  { font-size: 12px; color: var(--text3); }
+
+  /* Principles */
+  .principles { display: flex; flex-direction: column; gap: 16px; }
+  .principle {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .p-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .p-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .p-title { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .p-src { font-size: 11px; color: var(--text3); border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; }
+  .p-body { display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 640px) { .p-body { grid-template-columns: 1fr; } }
+  .p-col { padding: 14px 20px; }
+  .p-col:first-child { border-right: 1px solid var(--border2); }
+  .col-label { font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+  .col-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  .pn1 { background: var(--purple-bg); color: var(--purple); }
+  .pn2 { background: var(--teal-bg);   color: var(--teal);   }
+  .pn3 { background: var(--blue-bg);   color: var(--blue);   }
+  .pn4 { background: var(--amber-bg);  color: var(--amber);  }
+  .pn5 { background: var(--coral-bg);  color: var(--coral);  }
+
+  /* Radar */
+  .radar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .radar-grid { grid-template-columns: 1fr; } }
+  .radar-section { }
+  .radar-header {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; padding: 0 4px 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  .rh-adopt  { color: var(--teal); }
+  .rh-trial  { color: var(--blue); }
+  .rh-assess { color: var(--amber); }
+  .rh-hold   { color: var(--gray); }
+  .radar-item {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    margin-bottom: 8px;
+    cursor: default;
+  }
+  .ri-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .ri-sub  { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .ri-adopt  { border-color: var(--teal);   background: var(--teal-bg);   }
+  .ri-trial  { border-color: var(--blue);   background: var(--blue-bg);   }
+  .ri-assess { border-color: var(--amber);  background: var(--amber-bg);  }
+  .ri-hold   { border-color: var(--gray);   background: var(--gray-bg);   }
+
+  /* Tracking */
+  .week-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 28px; }
+  .day {
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .day-name { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .day-dots { display: flex; justify-content: center; gap: 3px; margin-bottom: 4px; }
+  .dd { width: 6px; height: 6px; border-radius: 50%; }
+  .day-label { font-size: 10px; color: var(--text3); line-height: 1.3; }
+  .d-core   { border-color: var(--teal);   background: var(--teal-bg); }
+  .d-extend { border-color: var(--purple); background: var(--purple-bg); }
+
+  /* Eval layers */
+  .eval-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 640px) { .eval-row { grid-template-columns: 1fr; } }
+  .eval-card {
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .ev-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .ev-sub   { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .ev-tag   { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; margin-top: 8px; }
+  .ev1 { border-color: var(--purple); }
+  .ev2 { border-color: var(--teal);   }
+  .ev3 { border-color: var(--amber);  }
+  .evtag1 { background: var(--purple-bg); color: var(--purple); }
+  .evtag2 { background: var(--teal-bg);   color: var(--teal);   }
+  .evtag3 { background: var(--amber-bg);  color: var(--amber);  }
+
+  /* Research refs */
+  .refs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 640px) { .refs { grid-template-columns: 1fr; } }
+  .ref-card {
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--bg2);
+  }
+  .ref-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .ref-meta  { font-size: 11px; color: var(--text3); }
+
+  /* Footer */
+  footer {
+    padding: 32px 40px;
+    border-top: 1px solid var(--border2);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .footer-left { font-size: 13px; font-weight: 500; color: var(--text); }
+  .footer-right { font-size: 12px; color: var(--text3); }
+  footer a { color: var(--text3); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="#">Trustworthy Agent Lab</a>
+  <div class="nav-links">
+    <a href="#principles">Principles</a>
+    <a href="#radar">Radar</a>
+    <a href="#tracking">Tracking</a>
+    <a href="https://github.com/hyungrok-oh/trustworthy-agent-lab" target="_blank">GitHub ↗</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-label">Hyungrok Oh · AI Agent Engineer</div>
+  <h1 class="hero-title">Building Agents<br>Enterprises Can <span>Trust</span></h1>
+  <p class="hero-sub">
+    A personal research lab focused on designing and evaluating AI agent systems
+    that say "I don't know" when they don't — and make every failure traceable.
+  </p>
+  <div class="hero-meta">
+    <span class="hero-badge">Go · Qwen-3.5-122B</span>
+    <span class="hero-badge">Workflow Automation · B2B</span>
+    <span class="hero-badge">Started 2026.04</span>
+  </div>
+</div>
+
+<!-- Core Beliefs -->
+<div class="section">
+  <div class="section-inner">
+    <div class="section-label">Core Beliefs</div>
+    <div class="beliefs">
+      <div class="belief">
+        <div class="belief-dot bd-purple"></div>
+        <div>
+          <div class="belief-main">An agent that admits uncertainty builds more long-term value</div>
+          <div class="belief-sub">Long-term trust over short-term satisfaction → directly tied to contract retention in B2B</div>
+        </div>
+      </div>
+      <div class="belief">
+        <div class="belief-dot bd-teal"></div>
+        <div>
+          <div class="belief-main">An agent you can't measure is an agent you can't improve — or deploy</div>
+          <div class="belief-sub">No eval = no trust → evaluation comes before design</div>
+        </div>
+      </div>
+      <div class="belief">
+        <div class="belief-dot bd-coral"></div>
+        <div>
+          <div class="belief-main">Simple, predictable structures build more trust than complex frameworks</div>
+          <div class="belief-sub">The lesson from LangChain's decline → abstraction you can't debug = abstraction you can't trust</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Design Principles -->
+<div class="section" id="principles">
+  <div class="section-inner">
+    <div class="section-label">Design Principles — v0.2</div>
+    <div class="principles">
+
+      <div class="principle">
+        <div class="p-head">
+          <div class="p-num pn1">1</div>
+          <div class="p-title">Tool selection must be explainable</div>
+          <div class="p-src">AgentHallu 2026</div>
+        </div>
+        <div class="p-body">
+          <div class="p-col">
+            <div class="col-label">Research basis</div>
+            <div class="col-text">Tool-Use Hallucination is the hardest to detect — even GPT-5 achieves only 11.6% accuracy. A wrong tool selection contaminates every subsequent step.</div>
+          </div>
+          <div class="p-col">
+            <div class="col-label">Practice</div>
+            <div class="col-text">Measure confidence before tool call. If below threshold, request user confirmation or stop. Always log selection rationale in StepTrace.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="p-head">
+          <div class="p-num pn2">2</div>
+          <div class="p-title">Context boundaries must be explicitly designed</div>
+          <div class="p-src">TrajAD 2026</div>
+        </div>
+        <div class="p-body">
+          <div class="p-col">
+            <div class="col-label">Research basis</div>
+            <div class="col-text">Agents blindly pursue goals while ignoring process rationality. Context contamination spreads silently — it doesn't surface until the final answer.</div>
+          </div>
+          <div class="p-col">
+            <div class="col-label">Practice</div>
+            <div class="col-text">Separate context into explicit slots: system prompt (fixed), session facts (verified), current input (per-turn), history (summarized).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="p-head">
+          <div class="p-num pn3">3</div>
+          <div class="p-title">Retrieval quality must be validated before generation</div>
+          <div class="p-src">DeepHalluBench 2026</div>
+        </div>
+        <div class="p-body">
+          <div class="p-col">
+            <div class="col-label">Research basis</div>
+            <div class="col-text">Retrieval and Planning hallucinations account for over half of all failures. Poor retrieval propagates hallucinations into the planning stage.</div>
+          </div>
+          <div class="p-col">
+            <div class="col-label">Practice</div>
+            <div class="col-text">Gate retrieval with relevance score threshold. If below threshold, return "no relevant information found" — do not proceed to generation.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="p-head">
+          <div class="p-num pn4">4</div>
+          <div class="p-title">Every step must be independently evaluable</div>
+          <div class="p-src">HTC + TRACE 2026</div>
+        </div>
+        <div class="p-body">
+          <div class="p-col">
+            <div class="col-label">Research basis</div>
+            <div class="col-text">The "high-score illusion": even correct final answers may rest on flawed reasoning. Last-step confidence alone misses intermediate failures.</div>
+          </div>
+          <div class="p-col">
+            <div class="col-label">Practice</div>
+            <div class="col-text">Log every step as a StepTrace struct with input, output, confidence, reasoning, and diagnostic signals. No LLM call without a trace.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="principle">
+        <div class="p-head">
+          <div class="p-num pn5">5</div>
+          <div class="p-title">When uncertain, stop and explain — never guess</div>
+          <div class="p-src">HTC 2026</div>
+        </div>
+        <div class="p-body">
+          <div class="p-col">
+            <div class="col-label">Research basis</div>
+            <div class="col-text">Last-step confidence 0.973 — but the answer was wrong. Full trajectory confidence should have been 0.052. Confident wrong answers are a design failure.</div>
+          </div>
+          <div class="p-col">
+            <div class="col-label">Practice</div>
+            <div class="col-text">3-tier confidence response: Confident (≥0.80) / Hedged (≥0.50) / Uncertain (&lt;0.50 → stop + explain + suggest alternative).</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Evaluation Layers -->
+<div class="section">
+  <div class="section-inner">
+    <div class="section-label">Evaluation Layers — 3-tier hierarchical diagnosis</div>
+    <div class="eval-row">
+      <div class="eval-card ev1">
+        <div class="ev-title">Step-level Eval</div>
+        <div class="ev-sub">Independent evaluation of each decision step. Tool selection, context usage, intermediate reasoning quality.</div>
+        <div class="ev-tag evtag1">AgentHallu 5 categories</div>
+      </div>
+      <div class="eval-card ev2">
+        <div class="ev-title">Flow-level Eval</div>
+        <div class="ev-sub">End-to-end flow consistency. Anomaly pattern detection. Backtrace which step caused divergence.</div>
+        <div class="ev-tag evtag2">TrajAD Anomaly</div>
+      </div>
+      <div class="eval-card ev3">
+        <div class="ev-title">Output-level Eval</div>
+        <div class="ev-sub">Final answer quality. High-score illusion prevention. Gold set + LLM-as-judge + human review.</div>
+        <div class="ev-tag evtag3">TRACE methodology</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tech Radar -->
+<div class="section" id="radar">
+  <div class="section-inner">
+    <div class="section-label">Technology Radar — v0.1 · 2026.04</div>
+    <div class="radar-grid">
+      <div>
+        <div class="radar-header rh-adopt">Adopt — Use now</div>
+        <div class="radar-item ri-adopt">
+          <div class="ri-name">Agent Eval Design</div>
+          <div class="ri-sub">LLM-as-judge, RAGAS, step-level eval · HTC · AgentHallu · TRACE</div>
+        </div>
+        <div class="radar-item ri-adopt">
+          <div class="ri-name">.md Context Design Pattern</div>
+          <div class="ri-sub">CLAUDE.md, AGENTS.md · Applied ✅</div>
+        </div>
+        <div class="radar-item ri-adopt">
+          <div class="ri-name">LLM Observability</div>
+          <div class="ri-sub">Langfuse / custom StepTrace · TrajAD</div>
+        </div>
+
+        <div class="radar-header rh-trial" style="margin-top:20px">Trial — Experimenting</div>
+        <div class="radar-item ri-trial">
+          <div class="ri-name">Step-level Traceability (Go)</div>
+          <div class="ri-sub">StepTrace struct implementation · In progress</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="radar-header rh-assess">Assess — Watching</div>
+        <div class="radar-item ri-assess">
+          <div class="ri-name">MCP (Model Context Protocol)</div>
+          <div class="ri-sub">Tool integration standard · Reassess Q3 2026</div>
+        </div>
+        <div class="radar-item ri-assess">
+          <div class="ri-name">Prefill-Decode Separation</div>
+          <div class="ri-sub">Infra trend · For collaboration awareness</div>
+        </div>
+        <div class="radar-item ri-assess">
+          <div class="ri-name">On-device Agent (CoreML + MLX)</div>
+          <div class="ri-sub">Blue ocean · Privacy demand growing · Q3 2026</div>
+        </div>
+
+        <div class="radar-header rh-hold" style="margin-top:20px">Hold — Not now</div>
+        <div class="radar-item ri-hold">
+          <div class="ri-name">LangChain / Over-abstracted Frameworks</div>
+          <div class="ri-sub">Can't debug = can't trust</div>
+        </div>
+        <div class="radar-item ri-hold">
+          <div class="ri-name">General-purpose Agent Platform Rebuild</div>
+          <div class="ri-sub">Validate use cases first</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tracking System -->
+<div class="section" id="tracking">
+  <div class="section-inner">
+    <div class="section-label">Weekly Tracking Rhythm</div>
+    <div class="week-row">
+      <div class="day d-core">
+        <div class="day-name">Mon</div>
+        <div class="day-dots"><div class="dd" style="background:var(--teal)"></div></div>
+        <div class="day-label">Trigger capture</div>
+      </div>
+      <div class="day">
+        <div class="day-name">Tue</div>
+        <div class="day-label">Free</div>
+      </div>
+      <div class="day d-core">
+        <div class="day-name">Wed</div>
+        <div class="day-dots"><div class="dd" style="background:var(--teal)"></div></div>
+        <div class="day-label">Midweek check</div>
+      </div>
+      <div class="day">
+        <div class="day-name">Thu</div>
+        <div class="day-label">Free</div>
+      </div>
+      <div class="day d-core">
+        <div class="day-name">Fri</div>
+        <div class="day-dots"><div class="dd" style="background:var(--teal)"></div><div class="dd" style="background:var(--amber)"></div></div>
+        <div class="day-label">Weekly review 30min</div>
+      </div>
+      <div class="day d-extend">
+        <div class="day-name">Sat</div>
+        <div class="day-dots"><div class="dd" style="background:var(--purple)"></div><div class="dd" style="background:var(--purple)"></div><div class="dd" style="background:var(--coral)"></div></div>
+        <div class="day-label">Deep work 2–3h</div>
+      </div>
+      <div class="day d-extend">
+        <div class="day-name">Sun</div>
+        <div class="day-dots"><div class="dd" style="background:var(--purple)"></div><div class="dd" style="background:var(--amber)"></div></div>
+        <div class="day-label">Build + retro</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Research References -->
+<div class="section">
+  <div class="section-inner">
+    <div class="section-label">Research Foundation</div>
+    <div class="refs">
+      <div class="ref-card">
+        <div class="ref-title">HTC — Holistic Trajectory Calibration</div>
+        <div class="ref-meta">Salesforce AI Research · 2026.01 · Trajectory-level confidence calibration with 4 diagnostic feature categories</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">AgentHallu</div>
+        <div class="ref-meta">2026.01 · Hallucination attribution across 5 categories (Planning, Retrieval, Reasoning, Tool-Use, Human-Interaction)</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">TrajAD — Trajectory Anomaly Detection</div>
+        <div class="ref-meta">2026.02 · Detecting anomalous patterns in agent execution trajectories</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">TRACE</div>
+        <div class="ref-meta">2026.02 · Beyond final-output evaluation; countering the "high-score illusion"</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">DeepHalluBench / PIES Taxonomy</div>
+        <div class="ref-meta">2026.01 · Hallucination taxonomy for deep research agents across full research trajectories</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">KDD 2025 — LLM Agent Evaluation Survey</div>
+        <div class="ref-meta">2025.07 · Two-dimensional taxonomy for evaluating LLM agents in enterprise settings</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-left">Hyungrok Oh · Trustworthy Agent Lab</div>
+  <div class="footer-right">
+    <a href="https://github.com/hyungrok-oh/trustworthy-agent-lab" target="_blank">GitHub ↗</a>
+    &nbsp;·&nbsp; v0.1 · 2026.04
+  </div>
+</footer>
+
+</body>
+</html>

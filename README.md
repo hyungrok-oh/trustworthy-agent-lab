@@ -1,81 +1,90 @@
 # Trustworthy Agent Lab
 
-> B2B 환경에서 기업 고객이 신뢰할 수 있는 Agent 시스템을 설계하고 평가하는 전문가가 되기 위한 개인 연구 레포입니다.
+> A personal research repository for becoming an expert in designing and evaluating trustworthy AI agent systems in B2B environments.
 
 ---
 
-## 미션
+## Mission
 
-**B2B 환경에서 기업 고객이 신뢰할 수 있는 Agent 시스템을 설계하고 평가하는 전문가**
+**Design and evaluate AI agent systems that enterprise clients can trust.**
 
-모르면 모른다고 말하는 Agent가 뭐든 안다고 대답하는 Agent보다 장기적으로 더 많은 가치를 만든다고 믿습니다.
+I believe that an agent that says "I don't know" when it doesn't know creates more long-term value than one that confidently answers everything — including things it shouldn't.
 
 ---
 
 ## Core Beliefs
 
-1. **모르면 모른다고 말하는 Agent가 장기적으로 더 많은 가치를 만든다**
-   - 단기 만족보다 장기 신뢰 → B2B에서 계약 유지와 직결
+1. **An agent that admits uncertainty builds more long-term value than one that always answers confidently**
+   - Long-term trust over short-term satisfaction → directly tied to contract retention in B2B
 
-2. **측정할 수 없는 Agent는 개선할 수 없고, 배포할 수도 없다**
-   - Eval이 없으면 신뢰도 없다 → 설계보다 평가가 먼저
+2. **An agent you can't measure is an agent you can't improve — or deploy**
+   - No eval = no trust → evaluation comes before design
 
-3. **복잡한 프레임워크보다 단순하고 예측 가능한 구조가 신뢰를 만든다**
-   - LangChain 퇴조의 교훈 → 추상화는 디버깅 불가 = 신뢰 불가
-
----
-
-## 판단 필터
-
-새 기술이나 트렌드를 만났을 때 아래 기준으로 판단합니다.
-
-**통과 기준**
-- 신뢰 문제를 해결하는가?
-- 프로덕션에서 쓰는 사람이 있는가?
-- 6개월 후에도 유효한 개념인가?
-
-**탈락 기준**
-- 복잡성만 추가하는가?
-- 프레임워크 마케팅인가?
-- 측정 방법이 없는가?
+3. **Simple, predictable structures build more trust than complex frameworks**
+   - The lesson from LangChain's decline → abstraction you can't debug = abstraction you can't trust
 
 ---
 
-## 레포 구조
+## Judgment Filter
+
+When encountering a new technology or trend, I apply these criteria.
+
+**Accept if:**
+- Does it solve a trust problem?
+- Are people using it in production?
+- Will it still be relevant in 6 months?
+
+**Reject if:**
+- Does it only add complexity?
+- Is it framework marketing?
+- Is there no way to measure it?
+
+---
+
+## Repository Structure
 
 ```
 trustworthy-agent-lab/
-├── README.md                          ← 미션 + 고정점 (이 파일)
-├── CLAUDE.md                          ← Claude Code 컨텍스트 파일
+├── README.md                          ← Mission + fixed points (this file)
+├── CLAUDE.md                          ← Claude Code context file
+├── docs/
+│   └── index.html                     ← GitHub Pages report
 ├── principles/
-│   └── trustworthy-agent-design.md    ← 신뢰 가능한 Agent 설계 원칙
+│   └── trustworthy-agent-design.md    ← Trustworthy agent design principles
 ├── radar/
-│   └── tech-radar.md                  ← 기술 레이더 (월 업데이트)
+│   └── tech-radar.md                  ← Technology radar (monthly update)
 ├── tracking/
-│   └── system.md                      ← 개인 트래킹 시스템
+│   └── system.md                      ← Personal tracking system
 └── notes/
-    └── YYYY-MM-wN.md                  ← 주간 트리거 메모
+    ├── _template.md                   ← Weekly note template
+    └── YYYY-MM-wN.md                  ← Weekly trigger notes
 ```
 
 ---
 
-## 현재 기술 스택
+## Current Stack
 
-- **언어**: Go
+- **Language**: Go
 - **LLM**: Qwen-3.5-122B
-- **도메인**: 워크플로우 자동화 Agent (B2B)
-- **관심 영역**: 온디바이스 Agent, Agent Eval, Multi-agent Orchestration
+- **Domain**: Workflow automation agent (B2B)
+- **Interest areas**: On-device Agent, Agent Eval, Multi-agent orchestration
 
 ---
 
-## 업데이트 주기
+## Update Cadence
 
-| 주기 | 내용 |
-|------|------|
-| 매주 금요일 | 주간 리뷰 → notes/ 커밋 |
-| 매월 말 | 기술 레이더 업데이트 |
-| 필요 시 | 설계 원칙 개정 |
+| Frequency | Content |
+|-----------|---------|
+| Every Friday | Weekly review → commit to notes/ |
+| End of month | Technology radar update |
+| As needed | Design principles revision |
 
 ---
 
-_시작일: 2026.04 · 실무 경험 + 최신 연구 기반_
+## Live Report
+
+→ [Trustworthy Agent Lab Report](https://hyungrok-oh.github.io/trustworthy-agent-lab/)
+
+---
+
+_Started: 2026.04 · Based on hands-on experience + latest research_
