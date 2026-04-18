@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from eval.core.metrics import StepMetrics, compute_step_metrics
+from eval.core.metrics import compute_step_metrics
 from eval.core.models import DynamicsSignal, StabilitySignal, StepError, StepTraceReceived
 
 
@@ -24,7 +24,7 @@ def _make_trace(
         error=StepError(code="fail", message="oops", failure_category="reasoning")
         if has_error
         else None,
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         duration_ms=duration_ms,
     )
 

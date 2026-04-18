@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from eval.collector.receiver import TraceReceiver
 from eval.core.models import DynamicsSignal, StabilitySignal, StepTraceReceived
@@ -17,7 +17,7 @@ def _make_step(trace_id: str, step_id: int, confidence: float = 0.85) -> StepTra
         reasoning="test",
         dynamics=DynamicsSignal(confidence_delta=0.0, trend="stable"),
         stability=StabilitySignal(output_consistency=0.9),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         duration_ms=100.0,
     )
 

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -27,7 +27,7 @@ def _make_trace(trace_id: str = "emit-test-001", step_id: int = 0) -> StepTrace:
         reasoning="test",
         dynamics=DynamicsSignal(confidence_delta=0.0, trend="stable"),
         stability=StabilitySignal(output_consistency=1.0),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         duration_ms=100.0,
     )
 

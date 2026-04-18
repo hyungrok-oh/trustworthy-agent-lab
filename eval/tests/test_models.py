@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from eval.core.models import (
     StepTraceReceived,
@@ -20,7 +20,7 @@ def test_step_trace_received_from_json() -> None:
         "reasoning": "test",
         "dynamics": {"confidence_delta": 0.0, "trend": "stable"},
         "stability": {"output_consistency": 1.0},
-        "started_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": datetime.now(UTC).isoformat(),
         "duration_ms": 100.0,
         "logprobs": [[-0.1, -0.3], [-0.2]],
     }
@@ -43,7 +43,7 @@ def test_step_trace_received_without_optional_fields() -> None:
         "reasoning": "test",
         "dynamics": {"confidence_delta": 0.0, "trend": "stable"},
         "stability": {"output_consistency": 0.8},
-        "started_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": datetime.now(UTC).isoformat(),
         "duration_ms": 50.0,
     }
     trace = StepTraceReceived.model_validate(raw)

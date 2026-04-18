@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from agent.core.trace import (
     AnomalySignal,
@@ -37,7 +37,7 @@ def test_step_trace_minimal() -> None:
         reasoning="direct answer, high certainty",
         dynamics=DynamicsSignal(confidence_delta=0.0, trend="stable"),
         stability=StabilitySignal(output_consistency=1.0),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         duration_ms=150.0,
     )
     assert trace.step_type == StepType.LLM_CALL
@@ -65,7 +65,7 @@ def test_step_trace_with_error() -> None:
             message="connection timeout",
             failure_category="reasoning",
         ),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         duration_ms=30000.0,
     )
     assert trace.error is not None
@@ -86,7 +86,7 @@ def test_step_trace_with_logprobs() -> None:
         dynamics=DynamicsSignal(confidence_delta=0.0, trend="stable"),
         stability=StabilitySignal(output_consistency=0.95),
         logprobs=[[-0.1, -0.5, -0.3], [-0.2, -0.4]],
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         duration_ms=100.0,
     )
     assert trace.logprobs is not None
@@ -106,7 +106,7 @@ def test_step_trace_serializes_to_json() -> None:
         reasoning="test",
         dynamics=DynamicsSignal(confidence_delta=0.0, trend="stable"),
         stability=StabilitySignal(output_consistency=1.0),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         duration_ms=100.0,
     )
     data = trace.model_dump(mode="json")

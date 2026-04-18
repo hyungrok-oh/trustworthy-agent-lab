@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 import math
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from agent.core.confidence import AgentResponse, judge_confidence
 from agent.core.context import WorkflowContext
@@ -103,7 +103,7 @@ class ConversationPipeline:
         FORBIDDEN: calling LLM without creating a StepTrace.
         """
         step_id = trace_ctx.next_step_id()
-        started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(UTC)
         start_time = time.monotonic()
 
         messages = workflow_ctx.to_messages()

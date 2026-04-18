@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from agent.core.confidence import judge_confidence
 from agent.core.trace import (
@@ -23,7 +23,7 @@ def _make_step(confidence: float) -> StepTrace:
         reasoning="test",
         dynamics=DynamicsSignal(confidence_delta=0.0, trend="stable"),
         stability=StabilitySignal(output_consistency=1.0),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         duration_ms=100.0,
     )
 
