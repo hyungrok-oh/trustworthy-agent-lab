@@ -1,0 +1,42 @@
+services:
+  agent:
+    build:
+      context: ./agent
+    ports:
+      - "8081:8081"
+    environment:
+      - AGENT_LLM_BASE_URL=http://host.docker.internal:8000
+      - AGENT_EVAL_BASE_URL=http://eval:8090
+      - AGENT_TRACE_EMITTER=http
+      - AGENT_MONGODB_URL=mongodb://mongodb:27017
+      - AGENT_MONGODB_DATABASE=agent_db
+    depends_on:
+      mongodb:
+        condition: service_started
+      eval:
+        condition: service_started
+    restart: unless-stopped
+
+  eval:
+    build:
+      context: ./eval
+    ports:
+      - "8090:8090"
+    environment:
+      - EVAL_MONGODB_URL=mongodb://mongodb:27017
+      - EVAL_MONGODB_DATABASE=eval_db
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7-jammy
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

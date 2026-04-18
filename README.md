@@ -46,7 +46,8 @@ When encountering a new technology or trend, I apply these criteria.
 ```
 trustworthy-agent-lab/
 ├── README.md                          ← Mission + fixed points (this file)
-├── CLAUDE.md                          ← Claude Code context file
+├── .claude/                           
+│   └── CLAUDE.md                      ← Claude Code context file
 ├── docs/
 │   └── index.html                     ← GitHub Pages report
 ├── principles/
