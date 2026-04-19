@@ -9,5 +9,6 @@ class Settings(BaseSettings):
 
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_database: str = "eval_db"
+    mongodb_enabled: bool = True
 
     model_config = {"env_prefix": "EVAL_"}
