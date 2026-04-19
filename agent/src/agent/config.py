@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # MongoDB
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_database: str = "agent_db"
+    mongodb_enabled: bool = True
 
     # Trace emitter type: "http" | "file" | "noop"
     trace_emitter: str = "http"
