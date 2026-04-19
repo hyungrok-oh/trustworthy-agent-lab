@@ -11,12 +11,14 @@ Endpoints:
 from __future__ import annotations
 
 import logging
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
+from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
 from agent.config import Settings
@@ -25,6 +27,7 @@ from agent.emitter.http import HttpTraceEmitter
 from agent.emitter.protocol import NoopTraceEmitter, TraceEmitter
 from agent.llm.client import LLMClient
 from agent.pipeline.conversation import ConversationPipeline
+from agent.repository.conversation import ConversationRepository
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,22 @@ def _build_emitter(settings: Settings) -> TraceEmitter:
             return FileTraceEmitter(output_dir=Path(settings.trace_file_path))
         case _:
             return NoopTraceEmitter()
+
+
+def _build_history_summary(messages: list[dict[str, Any]]) -> str:
+    """Build history summary from stored conversation messages.
+
+    Simple concatenation of recent messages. Phase 2+ may replace
+    this with LLM-based summarization for longer conversations.
+
+    Cap at 10 most recent messages to keep context bounded
+    (Principle 2: context boundaries must be explicit).
+    """
+    if not messages:
+        return ""
+    recent = messages[-10:]
+    parts = [f"{msg['role']}: {msg['content']}" for msg in recent]
+    return "\n".join(parts)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -71,14 +90,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             ),
         )
 
+        # MongoDB (optional — disabled in tests)
+        conversation_repo = None
+        motor_client = None
+        if settings.mongodb_enabled:
+            motor_client = AsyncIOMotorClient(settings.mongodb_url)
+            db = motor_client[settings.mongodb_database]
+            conversation_repo = ConversationRepository(db["conversations"])
+            await conversation_repo.ensure_indexes()
+            logger.info(
+                "MongoDB connected: %s/%s",
+                settings.mongodb_url,
+                settings.mongodb_database,
+            )
+
         state["pipeline"] = pipeline
         state["llm_client"] = llm_client
         state["emitter"] = emitter
+        state["conversation_repo"] = conversation_repo
+        state["motor_client"] = motor_client
 
         logger.info(
-            "Agent server started (llm=%s, emitter=%s)",
+            "Agent server started (llm=%s, emitter=%s, mongodb=%s)",
             settings.llm_model,
             settings.trace_emitter,
+            "enabled" if settings.mongodb_enabled else "disabled",
         )
         yield
 
@@ -86,6 +122,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await llm_client.close()
         if hasattr(emitter, "close"):
             await emitter.close()
+        if motor_client:
+            motor_client.close()
 
     app = FastAPI(
         title="Trustworthy Agent",
@@ -100,7 +138,41 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/chat")
     async def chat(request: ChatRequest) -> dict[str, Any]:
         pipeline: ConversationPipeline = state["pipeline"]
-        response = await pipeline.run(user_input=request.message)
-        return response.model_dump(mode="json")
+        conversation_repo: ConversationRepository | None = state.get(
+            "conversation_repo"
+        )
+
+        session_id = request.session_id or str(uuid.uuid4())
+
+        # Load conversation history (Principle 2: explicit context boundary)
+        history_summary = ""
+        if conversation_repo:
+            try:
+                messages = await conversation_repo.get_messages(session_id)
+                history_summary = _build_history_summary(messages)
+            except Exception as e:
+                logger.warning("Failed to load conversation history: %s", e)
+
+        response = await pipeline.run(
+            user_input=request.message,
+            history_summary=history_summary,
+        )
+
+        # Persist conversation (skip if MongoDB unavailable)
+        if conversation_repo:
+            try:
+                await conversation_repo.save_message(
+                    session_id, "user", request.message
+                )
+                if response.answer:
+                    await conversation_repo.save_message(
+                        session_id, "assistant", response.answer
+                    )
+            except Exception as e:
+                logger.warning("Failed to save conversation: %s", e)
+
+        result = response.model_dump(mode="json")
+        result["session_id"] = session_id
+        return result
 
     return app

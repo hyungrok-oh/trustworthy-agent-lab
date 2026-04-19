@@ -1,12 +1,14 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from eval.config import Settings
 from eval.main import create_app
 
 
 @pytest.fixture
 def app():
-    return create_app()
+    settings = Settings(mongodb_enabled=False)
+    return create_app(settings)
 
 
 @pytest.fixture
