@@ -37,3 +37,9 @@ coverage.xml
 
 # Logs
 *.log
+
+# Implementation plans (transient artifacts)
+docs/plans/
+
+# Weekly notes (personal work journal)
+research/notes/
