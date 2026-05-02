@@ -1,7 +1,7 @@
 # === Build Stage ===
-FROM python:3.13-slim-bookworm AS builder
+FROM python:3.13.13-slim-bookworm AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.8 /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN uv sync --frozen --no-dev
 
 
 # === Runtime Stage ===
-FROM python:3.13-slim-bookworm
+FROM python:3.13.13-slim-bookworm
 
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \

@@ -1,9 +1,9 @@
 # === Build Stage ===
 # Install dependencies in a separate stage so build tools
 # don't end up in the final image (smaller + safer)
-FROM python:3.13-slim-bookworm AS builder
+FROM python:3.13.13-slim-bookworm AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.8 /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ RUN uv sync --frozen --no-dev
 
 # === Runtime Stage ===
 # Fresh slim image — no build tools, no cache, minimal attack surface
-FROM python:3.13-slim-bookworm
+FROM python:3.13.13-slim-bookworm
 
 # Security: apply latest patches
 RUN apt-get update \
