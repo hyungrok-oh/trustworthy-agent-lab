@@ -29,6 +29,15 @@ from agent.llm.client import LLMClient
 from agent.pipeline.conversation import ConversationPipeline
 from agent.repository.conversation import ConversationRepository
 
+# Configure root logger so app-level logger.info() reaches stdout.
+# uvicorn only configures its own loggers (uvicorn, uvicorn.error,
+# uvicorn.access) — without this, agent.main messages are silently
+# dropped by Python's lastResort handler (WARNING+ only).
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
 logger = logging.getLogger(__name__)
 
 
