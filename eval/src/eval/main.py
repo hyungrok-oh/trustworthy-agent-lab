@@ -24,6 +24,15 @@ from eval.config import Settings
 from eval.core.models import StepTraceReceived
 from eval.repository.trace import TraceRepository
 
+# Configure root logger so app-level logger.info() reaches stdout.
+# uvicorn only configures its own loggers (uvicorn, uvicorn.error,
+# uvicorn.access) — without this, eval.main messages are silently
+# dropped by Python's lastResort handler (WARNING+ only).
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
 logger = logging.getLogger(__name__)
 
 
