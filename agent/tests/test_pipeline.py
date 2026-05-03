@@ -6,7 +6,7 @@ from agent.core.confidence import AgentResponse
 from agent.core.trace import StepTrace, StepType
 from agent.emitter.protocol import NoopTraceEmitter
 from agent.llm.client import LLMResponse
-from agent.pipeline.conversation import ConversationPipeline
+from agent.pipeline.conversation import ConversationPipeline, strip_reasoning_channel
 
 
 @pytest.fixture
@@ -109,3 +109,23 @@ async def test_pipeline_confidence_from_logprobs(
     # average ≈ 0.92 → should be "confident"
     assert response.status == "confident"
     assert response.confidence > 0.8
+
+
+def test_strip_reasoning_channel_with_markers() -> None:
+    raw = "<|channel>thought\n* some reasoning\n<channel|>안녕하세요"
+    assert strip_reasoning_channel(raw) == "안녕하세요"
+
+
+def test_strip_reasoning_channel_without_markers() -> None:
+    raw = "안녕하세요"
+    assert strip_reasoning_channel(raw) == "안녕하세요"
+
+
+def test_strip_reasoning_channel_with_noresponse() -> None:
+    raw = ""
+    assert strip_reasoning_channel(raw) == ""
+
+
+def test_strip_reasoning_channel_with_only_markers() -> None:
+    raw = "<|channel>thought\n* some reasoning\n<channel|>"
+    assert strip_reasoning_channel(raw) == ""
