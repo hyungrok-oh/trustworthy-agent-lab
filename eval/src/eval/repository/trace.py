@@ -62,6 +62,18 @@ class TraceRepository:
             for step_data in doc.get("steps", [])
         ]
 
+    async def mark_analyzed(self, trace_id: str) -> bool:
+        """Mark a trace as analyzed after metric computation.
+
+        Preserves the trace for future analysis (e.g. HTC feature
+        extraction in Phase 4), unlike delete_trace which removes it.
+        """
+        result = await self._collection.update_one(
+            {"trace_id": trace_id},
+            {"$set": {"analyzed": True}},
+        )
+        return result.modified_count > 0
+
     async def delete_trace(self, trace_id: str) -> bool:
         """Delete a trace document after processing.
 

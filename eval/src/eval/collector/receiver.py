@@ -50,7 +50,7 @@ class TraceReceiver:
         if self._repo:
             steps = await self._repo.get_steps(trace_id)
             if steps:
-                await self._repo.delete_trace(trace_id)
+                await self._repo.mark_analyzed(trace_id)
         else:
             steps = self._buffers.pop(trace_id, [])
 
