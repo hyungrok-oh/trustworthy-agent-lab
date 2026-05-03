@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 import time
 from datetime import UTC, datetime
 
@@ -39,6 +40,10 @@ from agent.llm.client import LLMClient
 
 logger = logging.getLogger(__name__)
 
+
+def strip_reasoning_channel(text: str) -> str:
+    cleaned_text = re.sub(r"<\|channel>thought.*?<channel\|>", "", text, flags=re.DOTALL)
+    return cleaned_text
 
 class ConversationPipeline:
     """Phase 1: Augmented LLM — single LLM call with full traceability."""
@@ -88,7 +93,7 @@ class ConversationPipeline:
 
         return judge_confidence(
             trace_id=trace_ctx.trace_id,
-            answer=step.output.get("response", ""),
+            answer=strip_reasoning_channel(step.output.get("response", "")),
             steps=[step],
             final_confidence=step.confidence,
         )
