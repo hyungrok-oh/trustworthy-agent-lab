@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -53,3 +54,17 @@ async def test_receiver_isolates_traces() -> None:
     metrics_b = await receiver.flush("trace-B")
     assert len(metrics_a) == 1
     assert len(metrics_b) == 1
+
+
+@pytest.mark.asyncio
+async def test_receiver_with_repo_marks_analyzed_on_flush() -> None:
+    """flush should call mark_analyzed (not delete) when repo is present."""
+    mock_repo = AsyncMock()
+    step = _make_step("trace-001", 0)
+    mock_repo.get_steps.return_value = [step]
+
+    receiver = TraceReceiver(repo=mock_repo)
+    await receiver.receive(step)
+    await receiver.flush("trace-001")
+
+    mock_repo.mark_analyzed.assert_called_once_with("trace-001")

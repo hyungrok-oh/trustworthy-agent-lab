@@ -94,6 +94,36 @@ async def test_get_steps_returns_deserialized_steps(
 
 
 @pytest.mark.asyncio
+async def test_mark_analyzed_returns_true_on_success(
+    repo: TraceRepository,
+    mock_collection: AsyncMock,
+) -> None:
+    """mark_analyzed should return True when a document was updated."""
+    mock_collection.update_one.return_value = MagicMock(modified_count=1)
+
+    result = await repo.mark_analyzed("trace-001")
+
+    assert result is True
+    mock_collection.update_one.assert_called_once_with(
+        {"trace_id": "trace-001"},
+        {"$set": {"analyzed": True}},
+    )
+
+
+@pytest.mark.asyncio
+async def test_mark_analyzed_returns_false_for_unknown(
+    repo: TraceRepository,
+    mock_collection: AsyncMock,
+) -> None:
+    """mark_analyzed should return False when trace doesn't exist."""
+    mock_collection.update_one.return_value = MagicMock(modified_count=0)
+
+    result = await repo.mark_analyzed("nonexistent")
+
+    assert result is False
+
+
+@pytest.mark.asyncio
 async def test_delete_trace_returns_true_on_success(
     repo: TraceRepository,
     mock_collection: AsyncMock,
