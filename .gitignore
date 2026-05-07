@@ -43,3 +43,6 @@ docs/plans/
 
 # Weekly notes (personal work journal)
 research/notes/
+
+# Claude Code project config (local AI workflow, not for repo)
+.claude/
