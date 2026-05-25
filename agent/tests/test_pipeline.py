@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from agent.core.confidence import AgentResponse
+from agent.core.context import Turn
 from agent.core.trace import StepTrace, StepType
 from agent.emitter.protocol import NoopTraceEmitter
 from agent.llm.client import LLMResponse
@@ -53,10 +54,41 @@ async def test_pipeline_creates_step_trace(
     assert step.step_type == StepType.LLM_CALL
     assert step.is_first is True
     assert step.is_last is True
-    assert step.input["prompt"] == "Hello!"
     assert "Hello! How can I help you?" in step.output["response"]
     assert step.logprobs is not None
     assert step.duration_ms > 0
+
+
+@pytest.mark.asyncio
+async def test_pipeline_step_trace_input_is_slot_dict(
+    pipeline: ConversationPipeline,
+) -> None:
+    """StepTrace.input must expose all context slots for independent evaluation."""
+    response = await pipeline.run(user_input="Hello!")
+    inp = response.steps[0].input
+
+    assert inp["current_input"] == "Hello!"
+    assert "system_prompt" in inp
+    assert "facts" in inp
+    assert "summary" in inp
+    assert "recent_turns" in inp
+
+
+@pytest.mark.asyncio
+async def test_pipeline_recent_turns_in_step_trace(
+    pipeline: ConversationPipeline,
+) -> None:
+    """recent_turns passed to run() must appear in StepTrace.input."""
+    turns = [
+        Turn(role="user", content="Hi"),
+        Turn(role="assistant", content="Hello!"),
+    ]
+    response = await pipeline.run(user_input="What's next?", recent_turns=turns)
+    inp = response.steps[0].input
+
+    assert len(inp["recent_turns"]) == 2
+    assert inp["recent_turns"][0] == {"role": "user", "content": "Hi"}
+    assert inp["recent_turns"][1] == {"role": "assistant", "content": "Hello!"}
 
 
 @pytest.mark.asyncio

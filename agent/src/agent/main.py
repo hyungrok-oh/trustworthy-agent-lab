@@ -22,6 +22,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
 from agent.config import Settings
+from agent.core.context import Turn
 from agent.emitter.file import FileTraceEmitter
 from agent.emitter.http import HttpTraceEmitter
 from agent.emitter.protocol import NoopTraceEmitter, TraceEmitter
@@ -55,22 +56,6 @@ def _build_emitter(settings: Settings) -> TraceEmitter:
             return FileTraceEmitter(output_dir=Path(settings.trace_file_path))
         case _:
             return NoopTraceEmitter()
-
-
-def _build_history_summary(messages: list[dict[str, Any]]) -> str:
-    """Build history summary from stored conversation messages.
-
-    Simple concatenation of recent messages. Phase 2+ may replace
-    this with LLM-based summarization for longer conversations.
-
-    Cap at 10 most recent messages to keep context bounded
-    (Principle 2: context boundaries must be explicit).
-    """
-    if not messages:
-        return ""
-    recent = messages[-10:]
-    parts = [f"{msg['role']}: {msg['content']}" for msg in recent]
-    return "\n".join(parts)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -153,18 +138,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         session_id = request.session_id or str(uuid.uuid4())
 
-        # Load conversation history (Principle 2: explicit context boundary)
-        history_summary = ""
+        # Load conversation history as real turns (ADR-001: Principle 2)
+        recent_turns: list[Turn] = []
         if conversation_repo:
             try:
                 messages = await conversation_repo.get_messages(session_id)
-                history_summary = _build_history_summary(messages)
+                recent_turns = [
+                    Turn(role=m["role"], content=m["content"])
+                    for m in messages
+                    if m["role"] in ("user", "assistant")
+                ]
             except Exception as e:
                 logger.warning("Failed to load conversation history: %s", e)
 
         response = await pipeline.run(
             user_input=request.message,
-            history_summary=history_summary,
+            recent_turns=recent_turns,
         )
 
         # Persist conversation (skip if MongoDB unavailable)

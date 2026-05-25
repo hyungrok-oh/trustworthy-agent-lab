@@ -26,7 +26,7 @@ import time
 from datetime import UTC, datetime
 
 from agent.core.confidence import AgentResponse, judge_confidence
-from agent.core.context import WorkflowContext
+from agent.core.context import Turn, WorkflowContext
 from agent.core.trace import (
     DynamicsSignal,
     StabilitySignal,
@@ -63,6 +63,7 @@ class ConversationPipeline:
         self,
         *,
         user_input: str,
+        recent_turns: list[Turn] | None = None,
         history_summary: str = "",
     ) -> AgentResponse:
         """Execute the conversation pipeline with full tracing."""
@@ -72,6 +73,7 @@ class ConversationPipeline:
         workflow_ctx = WorkflowContext(
             system_prompt=self._system_prompt,
             current_input=user_input,
+            recent_turns=recent_turns or [],
             history_summary=history_summary,
         )
 
@@ -125,7 +127,19 @@ class ConversationPipeline:
                 step_type=StepType.LLM_CALL,
                 is_first=True,
                 is_last=True,
-                input={"prompt": workflow_ctx.current_input},
+                input={
+                    "system_prompt": workflow_ctx.system_prompt,
+                    "facts": [
+                        f.model_dump()
+                        for f in workflow_ctx.session_facts
+                        if f.verified
+                    ],
+                    "summary": workflow_ctx.history_summary,
+                    "recent_turns": [
+                        t.model_dump() for t in workflow_ctx.recent_turns
+                    ],
+                    "current_input": workflow_ctx.current_input,
+                },
                 output={"response": llm_response.text},
                 confidence=confidence,
                 reasoning=f"LLM response with {llm_response.completion_tokens} tokens",
@@ -146,7 +160,19 @@ class ConversationPipeline:
                 step_type=StepType.LLM_CALL,
                 is_first=True,
                 is_last=True,
-                input={"prompt": workflow_ctx.current_input},
+                input={
+                    "system_prompt": workflow_ctx.system_prompt,
+                    "facts": [
+                        f.model_dump()
+                        for f in workflow_ctx.session_facts
+                        if f.verified
+                    ],
+                    "summary": workflow_ctx.history_summary,
+                    "recent_turns": [
+                        t.model_dump() for t in workflow_ctx.recent_turns
+                    ],
+                    "current_input": workflow_ctx.current_input,
+                },
                 output={},
                 confidence=0.0,
                 reasoning=f"LLM call failed: {e}",
