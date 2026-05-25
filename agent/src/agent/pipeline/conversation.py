@@ -119,6 +119,41 @@ class ConversationPipeline:
             llm_response = await self._llm.chat(messages)
             duration_ms = (time.monotonic() - start_time) * 1000
 
+            if llm_response.logprobs is None:
+                return StepTrace(
+                    trace_id=trace_ctx.trace_id,
+                    step_id=step_id,
+                    step_type=StepType.LLM_CALL,
+                    is_first=True,
+                    is_last=True,
+                    input={
+                        "system_prompt": workflow_ctx.system_prompt,
+                        "facts": [
+                            f.model_dump()
+                            for f in workflow_ctx.session_facts
+                            if f.verified
+                        ],
+                        "summary": workflow_ctx.history_summary,
+                        "recent_turns": [
+                            t.model_dump() for t in workflow_ctx.recent_turns
+                        ],
+                        "current_input": workflow_ctx.current_input,
+                    },
+                    output={"response": llm_response.text},
+                    confidence=0.0,
+                    reasoning="LLM response received but logprobs missing",
+                    dynamics=DynamicsSignal(confidence_delta=0.0, trend="stable"),
+                    stability=StabilitySignal(output_consistency=1.0),
+                    logprobs=None,
+                    started_at=started_at,
+                    duration_ms=duration_ms,
+                    error=StepError(
+                        code="missing_logprobs",
+                        message="LLM server returned no logprobs despite logprobs=True in request",
+                        failure_category="output",
+                    ),
+                )
+
             confidence = self._estimate_confidence(llm_response.logprobs)
 
             return StepTrace(
@@ -187,9 +222,7 @@ class ConversationPipeline:
                 duration_ms=duration_ms,
             )
 
-    def _estimate_confidence(
-        self, logprobs: list[list[float]] | None
-    ) -> float:
+    def _estimate_confidence(self, logprobs: list[list[float]]) -> float:
         """Estimate confidence from token log-probabilities.
 
         Phase 1: simple average of top-1 logprobs converted to probability.
@@ -202,16 +235,16 @@ class ConversationPipeline:
         Why this works as a starting point:
             - High logprobs (close to 0) → model is sure → high confidence
             - Low logprobs (very negative) → model is unsure → low confidence
-        """
-        if not logprobs:
-            return 0.7  # default when logprobs unavailable
 
+        Caller must ensure logprobs is not None. Missing logprobs are an error
+        condition handled upstream in _call_llm, not a fallback case here.
+        """
         top1_probs = [
             math.exp(token_lps[0])
             for token_lps in logprobs
             if token_lps
         ]
         if not top1_probs:
-            return 0.7
+            return 0.0
 
         return sum(top1_probs) / len(top1_probs)

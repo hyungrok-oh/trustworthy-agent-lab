@@ -4,7 +4,7 @@
 > **자주 갱신되는 살아있는 문서** — `docs/specs/`의 박제된 설계 문서와 성격이 다름.
 
 **Last updated**: 2026-05-25
-**Last commit on main**: `3ad108f chore: gitignore .claude/ directory`
+**Last commit on main**: `c0a7699 Merge pull request #11 from hyungrok-oh/docs/sync-github-pages`
 **Current phase**: Phase 1.5 완료, Phase 2 진입 전 정리 작업 중
 
 ---
@@ -12,8 +12,9 @@
 ## 0. TL;DR (30초 컷)
 
 - ✅ **Phase 1.5 완료** — 단일 LLM 호출 + StepTrace + MongoDB 영속화 + 멀티턴
-- 🔧 **즉시 이어갈 작업 3건** (§3 참조) — 모두 Phase 2 진입 전 마무리해야 함
-- ✅ **ADR-001 결정 완료** (§5 참조) — Context slot 직렬화 전략 확정. 다음 PC에서는 구현부터 시작 가능
+- ✅ **ADR-001 구현 완료** — History injection (§3.1) main 머지. `Turn` 모델 + `recent_turns` + slot dict 전부 완료
+- ✅ **logprobs fallback 제거 완료** (§3.2) — `0.7` magic number 삭제, missing logprobs → StepError(output)
+- 🔧 **즉시 이어갈 작업 1건** (§3 참조) — Web UI(§3.3)
 - 🧹 **코드베이스 청결도**: TODO/FIXME 0건, skipped test 0건, 14개 테스트 파일 모두 활성
 
 ---
@@ -69,43 +70,16 @@ cd eval  && pytest
 
 ## 3. 즉시 이어갈 작업 (Phase 2 진입 전)
 
-### 3.1 ✅ History injection refactor — **설계 결정 완료 (ADR-001)**, 구현 대기
-- **파일**: `agent/src/agent/core/context.py:62-85`, `agent/src/agent/pipeline/conversation.py` (`_call_llm`)
-- **합의된 방향 (ADR-001, §5 참조)**:
-  - System zone(`system_prompt` + `session_facts` + `history_summary`)은 **section header를 가진 단일 system 메시지**로 직렬화 유지 (현재 코드 방식 그대로)
-  - **Recent N개 turn은 real `user`/`assistant` 메시지로 추가**
-  - Slot 분리는 *데이터 모델*과 *`StepTrace.input` dict*에서 보장 (wire format에서 강제하지 않음)
-- **구현 체크리스트**:
-  - [ ] `core/context.py`에 `Turn` 모델 추가 (`role: Literal["user","assistant"]`, `content: str`)
-  - [ ] `WorkflowContext`에 `recent_turns: list[Turn] = []` 필드 신설
-  - [ ] `to_messages()`가 recent_turns를 진짜 user/assistant 메시지로 삽입하도록 수정
-  - [ ] `pipeline/conversation.py`의 `_call_llm`에서 `StepTrace.input`을 slot dict로 확장:
-        `{"system_prompt": ..., "facts": [...], "summary": ..., "recent_turns": [...], "current_input": ...}`
-        (현재 `{"prompt": workflow_ctx.current_input}`만 있어 slot identity 손실 — 이게 진짜 Principle 3 위반 포인트)
-  - [ ] `recent_turns`를 채우는 로직 추적: `agent/src/agent/repository/conversation.py` + main의 chat handler에서 history를 읽어와 WorkflowContext를 만드는 위치 확인 후, summary 대신/와 함께 recent_turns로 주입
-  - [ ] `test_context.py` 보강 — recent_turns 케이스, slot 순서, role alternation 테스트
-  - [ ] `test_pipeline.py` 보강 — StepTrace.input의 slot dict 검증
-- **임시 결정**: N = ∞ (요약 안 함, recent_turns만 채움). 실제 요약 로직(N 초과분 → history_summary)은 **Phase 2의 첫 chain 사례**로 구현. 지금은 history_summary 필드를 빈 채로 둠.
-- **거부된 대안**:
-  - Multi-system 메시지로 slot마다 별도 system role 부여 → Gemma 학습 분포와 어긋남, OOD 입력, Principle 4 위반
-  - History를 전부 user/assistant fake turn으로 → 압축 요약은 turn으로 표현 불가, slot identity 손실
+### 3.1 ✅ History injection refactor — **완료** (PR #10, `0e01723`, main 머지)
+- `Turn(role, content)` 모델, `WorkflowContext.recent_turns`, `to_messages()` 확장, `StepTrace.input` slot dict 모두 구현 완료
+- `main.py` chat handler: `ConversationRepository`에서 history 로드 → `Turn` 변환 → pipeline 주입
+- `test_context.py`, `test_history.py`, `test_pipeline.py` 보강 완료
+- 설계 결정 상세는 §5 ADR-001 참조
 
-### 3.2 🔧 llm-serving logprobs fallback 제거
-- **파일**: `agent/src/agent/pipeline/conversation.py:180-189`
-- **현재 코드**:
-  ```python
-  if not logprobs:
-      return 0.7  # default when logprobs unavailable
-  ...
-  if not top1_probs:
-      return 0.7
-  ```
-- **문제**: Principle 2 위반. logprobs가 없으면 "모른다"고 해야지 0.7을 지어내면 안 됨.
-- **해야 할 것**:
-  1. llm-serving이 logprobs를 항상 반환하도록 보장 (vllm-mlx config 확인)
-  2. 그래도 없는 경우 → `confidence=0.0` + `StepError(failure_category="output")` 로 표시하거나, 호출 자체를 실패 처리
-  3. 0.7 magic number를 코드에서 완전히 제거
-- **상태**: 미착수.
+### 3.2 ✅ llm-serving logprobs fallback 제거 — **완료**
+- `_call_llm`: `logprobs is None`이면 `confidence=0.0` + `StepError(code="missing_logprobs", failure_category="output")` 반환
+- `_estimate_confidence`: 시그니처를 `list[list[float]]` (non-optional)로 변경, `0.7` magic number 완전 제거
+- `test_pipeline_missing_logprobs_is_error` 테스트 추가. 51/51 통과.
 
 ### 3.3 🆕 Web UI — "Trustworthy Agent Inspector"
 - **파일**: 존재하지 않음. `agent/static/` 또는 `agent/ui/` 디렉토리 신설.
@@ -144,7 +118,7 @@ cd eval  && pytest
 
 ### ADR-001: Context slot serialization — ✅ Resolved (2026-05-25)
 
-**Status**: Accepted (대화 세션에서 합의, 구현 미진행)
+**Status**: Implemented (PR #10, `0e01723`, 2026-05-25 main 머지)
 
 **Context**:
 현재 `WorkflowContext.to_messages()`는 `system_prompt + session_facts + history_summary`를 단일 system 메시지에 section header로 구분해서 concat한다. CLAUDE.md "Immediate next tasks #1"은 history를 "real user/assistant turns"로 emit하라고 요구해서 표면적으로 충돌하는 듯 보였음. 더 깊이 들여다보니 진짜 질문은 두 가지:
@@ -213,4 +187,4 @@ curl -X POST localhost:8081/api/chat \
 
 ---
 
-_v0.1 · 2026-05-25 · Phase 1.5 완료 시점 핸드오프_
+_v0.2 · 2026-05-25 · §3.1 ADR-001 구현 완료, §3.2~3.3 미착수_
