@@ -143,6 +143,33 @@ async def test_pipeline_confidence_from_logprobs(
     assert response.confidence > 0.8
 
 
+@pytest.mark.asyncio
+async def test_pipeline_missing_logprobs_is_error(
+    mock_llm_client: AsyncMock,
+) -> None:
+    """Missing logprobs must produce StepError(output), not a magic-number confidence."""
+    mock_llm_client.chat.return_value = LLMResponse(
+        text="Some answer",
+        logprobs=None,
+        prompt_tokens=10,
+        completion_tokens=5,
+        finish_reason="stop",
+    )
+    pipeline = ConversationPipeline(
+        llm_client=mock_llm_client,
+        emitter=NoopTraceEmitter(),
+        system_prompt="You are a helpful assistant.",
+    )
+
+    response = await pipeline.run(user_input="Hello!")
+
+    assert response.status == "uncertain"
+    assert response.steps[0].confidence == 0.0
+    assert response.steps[0].error is not None
+    assert response.steps[0].error.code == "missing_logprobs"
+    assert response.steps[0].error.failure_category == "output"
+
+
 def test_strip_reasoning_channel_with_markers() -> None:
     raw = "<|channel>thought\n* some reasoning\n<channel|>안녕하세요"
     assert strip_reasoning_channel(raw) == "안녕하세요"
