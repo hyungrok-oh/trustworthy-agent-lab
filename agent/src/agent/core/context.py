@@ -7,18 +7,20 @@ Slots:
     - Fixed zone: system_prompt (never modified)
     - Session zone: session_facts (verified facts only)
     - Current turn zone: current_input, current_step_idx (replaced every step)
-    - History zone: history_summary (compressed, original removed)
+    - History zone: recent_turns (real user/assistant messages) +
+                    history_summary (older turns compressed to summary, Phase 2+)
 
 FORBIDDEN: merging multiple slots into a single string without
 clear section boundaries.
 
 Reference: research/principles/trustworthy-agent-design.md (Principle 2)
 Reference: TrajAD (2026) — context contamination spreads silently
+Reference: ADR-001 (2026-05-25) — Context slot serialization strategy
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -35,6 +37,17 @@ class Fact(BaseModel):
     verified: bool = False
 
 
+class Turn(BaseModel):
+    """A single conversation turn from history.
+
+    Injected as real user/assistant messages (not system context),
+    so the model sees a natural alternating-turn format. (ADR-001)
+    """
+
+    role: Literal["user", "assistant"]
+    content: str
+
+
 class WorkflowContext(BaseModel):
     """Explicitly separated context slots for LLM calls.
 
@@ -42,7 +55,8 @@ class WorkflowContext(BaseModel):
     - Fixed: set once at pipeline creation, never modified
     - Session: accumulated during conversation, only verified facts
     - Current: replaced every step, never carried over
-    - History: compressed summary, originals discarded
+    - History (recent): real user/assistant turns, injected as actual messages
+    - History (older): compressed summary in system message (Phase 2+, empty for now)
     """
 
     # Fixed zone — set once, never modified during conversation
@@ -56,15 +70,22 @@ class WorkflowContext(BaseModel):
     current_input: str
     current_step_idx: int = 0
 
-    # History zone — compressed summary only, originals discarded
-    history_summary: str = ""
+    # History zone — recent turns as real messages; older history as summary
+    recent_turns: list[Turn] = []
+    history_summary: str = ""  # Phase 2+: summarised overflow of older turns
 
     def to_messages(self) -> list[dict[str, str]]:
         """Build LLM message list with clear slot boundaries.
 
-        System message includes fixed zone + session context.
-        User message is strictly the current input.
-        History is injected as system context, NOT as fake user/assistant turns.
+        Structure (ADR-001):
+            [system]  system_prompt + [Session Facts] + [Earlier Summary]
+            [user]    recent_turn[0]
+            [assistant] recent_turn[1]
+            ...
+            [user]    current_input   ← always last
+
+        Recent N turns as real user/assistant messages; older history as
+        compressed summary in system message.
         """
         system_parts: list[str] = [self.system_prompt]
 
@@ -76,10 +97,15 @@ class WorkflowContext(BaseModel):
 
         if self.history_summary:
             system_parts.append(
-                f"\n[Conversation History]\n{self.history_summary}"
+                f"\n[Earlier Summary]\n{self.history_summary}"
             )
 
-        return [
+        messages: list[dict[str, str]] = [
             {"role": "system", "content": "\n".join(system_parts)},
-            {"role": "user", "content": self.current_input},
         ]
+
+        for turn in self.recent_turns:
+            messages.append({"role": turn.role, "content": turn.content})
+
+        messages.append({"role": "user", "content": self.current_input})
+        return messages

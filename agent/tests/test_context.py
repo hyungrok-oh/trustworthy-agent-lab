@@ -1,4 +1,10 @@
-from agent.core.context import Fact, WorkflowContext
+from agent.core.context import Fact, Turn, WorkflowContext
+
+
+def test_turn_model() -> None:
+    t = Turn(role="user", content="hello")
+    assert t.role == "user"
+    assert t.content == "hello"
 
 
 def test_workflow_context_slot_separation() -> None:
@@ -10,6 +16,7 @@ def test_workflow_context_slot_separation() -> None:
     assert ctx.system_prompt == "You are a helpful assistant."
     assert ctx.current_input == "What is the weather?"
     assert ctx.session_facts == []
+    assert ctx.recent_turns == []
     assert ctx.history_summary == ""
     assert ctx.current_step_idx == 0
 
@@ -66,4 +73,70 @@ def test_workflow_context_no_history_no_section() -> None:
         current_input="Hi",
     )
     messages = ctx.to_messages()
-    assert "[Conversation History]" not in messages[0]["content"]
+    assert "[Earlier Summary]" not in messages[0]["content"]
+
+
+def test_workflow_context_recent_turns_appear_as_real_messages() -> None:
+    """recent_turns are injected as real user/assistant messages (ADR-001)."""
+    ctx = WorkflowContext(
+        system_prompt="You are helpful.",
+        current_input="What next?",
+        recent_turns=[
+            Turn(role="user", content="Hello"),
+            Turn(role="assistant", content="Hi there!"),
+        ],
+    )
+    messages = ctx.to_messages()
+    # system + 2 recent turns + current input = 4 messages
+    assert len(messages) == 4
+    assert messages[0]["role"] == "system"
+    assert messages[1] == {"role": "user", "content": "Hello"}
+    assert messages[2] == {"role": "assistant", "content": "Hi there!"}
+    assert messages[3] == {"role": "user", "content": "What next?"}
+
+
+def test_workflow_context_current_input_is_always_last() -> None:
+    """current_input must always be the final message."""
+    ctx = WorkflowContext(
+        system_prompt="You are helpful.",
+        current_input="Final question",
+        recent_turns=[
+            Turn(role="user", content="First"),
+            Turn(role="assistant", content="Reply"),
+        ],
+    )
+    messages = ctx.to_messages()
+    assert messages[-1] == {"role": "user", "content": "Final question"}
+
+
+def test_workflow_context_no_recent_turns_still_works() -> None:
+    """Without recent_turns, structure is system + current_input only."""
+    ctx = WorkflowContext(
+        system_prompt="You are helpful.",
+        current_input="Hi",
+    )
+    messages = ctx.to_messages()
+    assert len(messages) == 2
+    assert messages[0]["role"] == "system"
+    assert messages[1] == {"role": "user", "content": "Hi"}
+
+
+def test_workflow_context_summary_in_system_recent_turns_as_messages() -> None:
+    """Earlier summary goes in system message; recent turns are real messages."""
+    ctx = WorkflowContext(
+        system_prompt="You are helpful.",
+        current_input="Continue",
+        history_summary="User discussed weather earlier.",
+        recent_turns=[
+            Turn(role="user", content="What about tomorrow?"),
+            Turn(role="assistant", content="It will be sunny."),
+        ],
+    )
+    messages = ctx.to_messages()
+    # Summary in system message
+    assert "[Earlier Summary]" in messages[0]["content"]
+    assert "weather" in messages[0]["content"]
+    # Recent turns as real messages
+    assert messages[1]["role"] == "user"
+    assert messages[2]["role"] == "assistant"
+    assert messages[-1]["content"] == "Continue"
